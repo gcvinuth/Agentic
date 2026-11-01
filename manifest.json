@@ -1,0 +1,57 @@
+{
+  "id": "agency-autonomous-ai-agent",
+  "name": "Agency AI - Background Task Agent",
+  "short_name": "Agency AI",
+  "description": "Autonomous mobile AI agent powered by Gemini for background scheduled tasks, web automation, reminders & WhatsApp dispatches.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#030712",
+  "theme_color": "#0f172a",
+  "categories": ["productivity", "utilities", "tools"],
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Task Directive",
+      "short_name": "New Task",
+      "description": "Compose and schedule a new agent task",
+      "url": "./index.html#new-task",
+      "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Active Pipeline",
+      "short_name": "Pipeline",
+      "description": "Check currently running and queued background tasks",
+      "url": "./index.html#pipeline",
+      "icons": [{ "src": "./icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
+

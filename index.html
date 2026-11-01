@@ -1,0 +1,1790 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA & Android Meta Tags -->
+    <title>Agency AI // Background Autonomous Agent</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0a0f1d">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Agency AI">
+    <link rel="icon" type="image/svg+xml" href="./icon.svg">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        surface: {
+                            DEFAULT: '#090d16',
+                            card: '#0f172a',
+                            elevated: '#172033',
+                            border: '#1e293b'
+                        },
+                        brand: {
+                            50: '#eef2ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            glow: 'rgba(99, 102, 241, 0.25)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        input, textarea {
+            user-select: text;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            padding-bottom: env(safe-area-inset-bottom, 16px);
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Smooth scrolling & custom touch scrollbar */
+        ::-webkit-scrollbar { width: 3px; height: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        
+        /* Glow animations */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 0.3; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .glow-pulse {
+            animation: pulse-ring 2.5s infinite ease-in-out;
+        }
+
+        /* Material Ripple & Glass */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-nav {
+            background: rgba(10, 15, 29, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* Safe area bottom padding for floating navigation */
+        .pb-nav {
+            padding-bottom: calc(5rem + env(safe-area-inset-bottom, 16px));
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-[#030712] text-slate-100 antialiased">
+
+    <!-- TOP ANDROID APP BAR -->
+    <header class="sticky top-0 z-40 bg-[#0a0f1d]/90 backdrop-blur-md border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="relative w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-brand-500 to-cyan-400 p-[1.5px] shadow-lg shadow-indigo-500/20 flex-shrink-0">
+                <div class="w-full h-full bg-[#090d16] rounded-[10px] flex items-center justify-center">
+                    <i class="fa-solid fa-bolt-lightning text-cyan-400 text-sm"></i>
+                </div>
+                <span class="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" id="status-indicator"></span>
+                </span>
+            </div>
+            <div>
+                <div class="flex items-center gap-1.5">
+                    <h1 class="text-sm font-bold tracking-tight text-white">AGENCY <span class="text-indigo-400 text-xs font-mono font-normal">v2.0 PWA</span></h1>
+                    <span class="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-medium">BG ON</span>
+                </div>
+                <p class="text-[10px] text-slate-400 font-mono tracking-wide flex items-center gap-1.5">
+                    <span id="active-tasks-counter">0 Active</span> &bull; 
+                    <span id="gemini-status-tag" class="text-amber-400">Gemini: Connecting</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- PWA Install Button (Hidden by default, shown when installable) -->
+            <button id="pwa-install-btn" class="hidden items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-600 hover:to-cyan-600 text-white text-[11px] font-semibold py-1.5 px-3 rounded-full shadow-md shadow-indigo-500/20 transition-all active:scale-95">
+                <i class="fa-solid fa-download text-[10px]"></i> Install
+            </button>
+            
+            <!-- Quick Notification Permission Toggle -->
+            <button id="header-notif-btn" onclick="toggleNotificationPermission()" title="Notifications" class="w-8 h-8 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 flex items-center justify-center text-slate-300 transition-colors active:scale-90">
+                <i class="fa-regular fa-bell text-xs" id="header-notif-icon"></i>
+            </button>
+            
+            <!-- Avatar / Settings Quick Link -->
+            <button onclick="switchTab('settings')" class="w-8 h-8 rounded-full bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-center text-indigo-300 hover:text-white transition-all active:scale-90">
+                <i class="fa-solid fa-sliders text-xs"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ANDROID PWA INSTALL PROMPT TOAST BANNER -->
+    <div id="install-banner" class="hidden mx-4 mt-3 bg-gradient-to-r from-slate-900 to-indigo-950 border border-indigo-500/30 rounded-2xl p-3 shadow-xl flex items-center justify-between gap-3 animate-fade-in z-30">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-lg flex-shrink-0">
+                <i class="fa-brands fa-android"></i>
+            </div>
+            <div>
+                <h4 class="text-xs font-bold text-white">Install Agency Android App</h4>
+                <p class="text-[10px] text-slate-400">Get seamless background scheduling & instant notifications</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <button onclick="dismissInstallBanner()" class="text-slate-400 hover:text-white text-xs px-2 py-1">Later</button>
+            <button onclick="installPWA()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-sm">Install</button>
+        </div>
+    </div>
+
+    <!-- MAIN SCROLLABLE APP VIEWPORT -->
+    <main class="flex-1 overflow-y-auto px-4 py-4 pb-nav space-y-4">
+
+        <!-- TAB 1: NEW DIRECTIVE / PLANNER -->
+        <section id="tab-planner" class="space-y-4 tab-content">
+            
+            <!-- Greeting & Quick Status Card -->
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-900/60 to-slate-950 border border-slate-800/80 p-4 shadow-lg">
+                <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-mono tracking-wider uppercase text-indigo-400 font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-microchip"></i> Autonomous Directive Planner
+                    </span>
+                    <span id="engine-chip" class="text-[9px] font-mono px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-slate-700">
+                        Gemini 2.5 Flash
+                    </span>
+                </div>
+                <h2 class="text-base font-bold text-white tracking-tight">What task should the agent schedule?</h2>
+                <p class="text-xs text-slate-400 mt-1">Specify timing (e.g., "in 3 minutes", "at 9:00 PM"), URLs to open, reminders, or WhatsApp messages.</p>
+            </div>
+
+            <!-- Natural Language Directive Box -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-md focus-within:border-indigo-500/60 transition-colors">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-semibold text-slate-300 mono flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-indigo-400 text-[11px]"></i> DIRECTIVE INSTRUCTION
+                    </label>
+                    <!-- Voice Input Button (Web Speech API) -->
+                    <button id="voice-dictate-btn" onclick="toggleVoiceDictation()" class="flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-indigo-400 px-2 py-1 rounded-lg bg-slate-800/60 border border-slate-700/60 transition-colors">
+                        <i class="fa-solid fa-microphone" id="mic-icon"></i>
+                        <span id="mic-label">Dictate</span>
+                    </button>
+                </div>
+
+                <div class="relative">
+                    <textarea id="user-prompt" rows="3" 
+                        placeholder="e.g. In 2 minutes, open YouTube lo-fi stream and send me a notification to take a break. In 5 minutes, prepare a WhatsApp message to +1234567890 saying 'Check the report'..." 
+                        class="w-full bg-[#050811] border border-slate-800/90 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none font-sans leading-relaxed"></textarea>
+                </div>
+
+                <!-- Schedule Mode Selector (Quick Schedule vs Custom Delay) -->
+                <div class="space-y-2 pt-1 border-t border-slate-800/60">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400 text-[11px] font-mono">EXECUTION TIMING:</span>
+                        <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-[11px]">
+                            <button type="button" onclick="setTimingPreset('gemini')" class="timing-pill active px-2.5 py-1 rounded-md text-white font-medium bg-indigo-600 transition-all" data-preset="gemini">Auto (from prompt)</button>
+                            <button type="button" onclick="setTimingPreset(2)" class="timing-pill px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition-all" data-preset="2">2m</button>
+                            <button type="button" onclick="setTimingPreset(10)" class="timing-pill px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition-all" data-preset="10">10m</button>
+                            <button type="button" onclick="setTimingPreset(30)" class="timing-pill px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition-all" data-preset="30">30m</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execution Button -->
+                <button onclick="planAndExecute()" id="execute-btn" class="w-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold py-3.5 px-4 rounded-xl text-xs tracking-wider uppercase font-mono shadow-lg shadow-indigo-600/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play text-xs"></i>
+                    <span>Compile & Schedule Agent</span>
+                </button>
+            </div>
+
+            <!-- Quick Preset Templates -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs text-slate-400 font-mono px-1">
+                    <span>// ONE-TAP PRESETS</span>
+                    <span class="text-[10px] text-indigo-400">Tap to load</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button onclick="loadPreset('break')" class="p-3 bg-slate-900/50 hover:bg-slate-800/60 border border-slate-800/80 rounded-xl text-left space-y-1 transition-all active:scale-95 group">
+                        <div class="flex items-center gap-1.5 text-indigo-400 font-medium text-[11px]">
+                            <i class="fa-solid fa-mug-hot"></i> Rest & Hydrate
+                        </div>
+                        <p class="text-[10px] text-slate-400 line-clamp-2">In 2 minutes notify me to drink water and stretch.</p>
+                    </button>
+
+                    <button onclick="loadPreset('youtube')" class="p-3 bg-slate-900/50 hover:bg-slate-800/60 border border-slate-800/80 rounded-xl text-left space-y-1 transition-all active:scale-95 group">
+                        <div class="flex items-center gap-1.5 text-cyan-400 font-medium text-[11px]">
+                            <i class="fa-brands fa-youtube"></i> Focus Audio
+                        </div>
+                        <p class="text-[10px] text-slate-400 line-clamp-2">In 1 minute open YouTube Chill lofi beats.</p>
+                    </button>
+
+                    <button onclick="loadPreset('whatsapp')" class="p-3 bg-slate-900/50 hover:bg-slate-800/60 border border-slate-800/80 rounded-xl text-left space-y-1 transition-all active:scale-95 group">
+                        <div class="flex items-center gap-1.5 text-emerald-400 font-medium text-[11px]">
+                            <i class="fa-brands fa-whatsapp"></i> Quick Check-in
+                        </div>
+                        <p class="text-[10px] text-slate-400 line-clamp-2">Prepare WhatsApp 'Ready for sync' in 3 mins.</p>
+                    </button>
+
+                    <button onclick="loadPreset('quote')" class="p-3 bg-slate-900/50 hover:bg-slate-800/60 border border-slate-800/80 rounded-xl text-left space-y-1 transition-all active:scale-95 group">
+                        <div class="flex items-center gap-1.5 text-amber-400 font-medium text-[11px]">
+                            <i class="fa-solid fa-sparkles"></i> AI Insight
+                        </div>
+                        <p class="text-[10px] text-slate-400 line-clamp-2">In 2 mins, generate a motivational tech insight & speak it.</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Agent Capabilities Pill Badges -->
+            <div class="border border-slate-800/60 rounded-2xl p-3 bg-slate-900/30 space-y-2">
+                <div class="text-[10px] mono text-slate-400 font-semibold uppercase tracking-wider flex items-center justify-between">
+                    <span>// Background Capabilities</span>
+                    <span class="text-emerald-400 text-[10px]"><i class="fa-solid fa-check"></i> Android PWA Ready</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5 text-[11px] text-slate-300">
+                    <span class="bg-slate-800/70 border border-slate-700/60 px-2 py-1 rounded-lg flex items-center gap-1.5">
+                        <i class="fa-regular fa-clock text-indigo-400"></i> Timed Background Delay
+                    </span>
+                    <span class="bg-slate-800/70 border border-slate-700/60 px-2 py-1 rounded-lg flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-cyan-400"></i> URL Dispatch
+                    </span>
+                    <span class="bg-slate-800/70 border border-slate-700/60 px-2 py-1 rounded-lg flex items-center gap-1.5">
+                        <i class="fa-brands fa-whatsapp text-emerald-400"></i> WhatsApp Sender
+                    </span>
+                    <span class="bg-slate-800/70 border border-slate-700/60 px-2 py-1 rounded-lg flex items-center gap-1.5">
+                        <i class="fa-regular fa-bell text-amber-400"></i> System Alerts & Vibration
+                    </span>
+                    <span class="bg-slate-800/70 border border-slate-700/60 px-2 py-1 rounded-lg flex items-center gap-1.5">
+                        <i class="fa-solid fa-volume-high text-fuchsia-400"></i> Voice TTS Speech
+                    </span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 2: ACTIVE PIPELINE & LIVE EXECUTION -->
+        <section id="tab-pipeline" class="space-y-4 tab-content hidden">
+            
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-white tracking-tight">Active Execution Pipeline</h2>
+                    <p class="text-xs text-slate-400">Real-time status of scheduled directives</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearPipeline()" class="text-xs font-mono text-slate-400 hover:text-red-400 bg-slate-800/60 border border-slate-700/60 px-2.5 py-1 rounded-lg transition-colors">
+                        Clear Done
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pipeline Status Banner -->
+            <div id="pipeline-status-banner" class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div id="pipeline-pulse-dot" class="w-3 h-3 rounded-full bg-slate-600"></div>
+                    <div>
+                        <div id="pipeline-status" class="text-xs font-bold font-mono text-slate-300">IDLE // STANDBY</div>
+                        <div id="pipeline-summary" class="text-[11px] text-slate-400">Waiting for prompt compilation.</div>
+                    </div>
+                </div>
+                <div id="pipeline-countdown-badge" class="hidden text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    --:--
+                </div>
+            </div>
+
+            <!-- Steps Decomposition Cards -->
+            <div class="space-y-3">
+                <div class="text-[11px] font-mono text-slate-400 px-1 font-semibold tracking-wider">
+                    DECONSTRUCTED STEPS (<span id="steps-count">0</span>)
+                </div>
+
+                <div id="pipeline-steps" class="space-y-2.5 min-h-[180px]">
+                    <div class="bg-slate-900/30 border border-dashed border-slate-800/80 rounded-2xl p-8 text-center space-y-2">
+                        <div class="w-10 h-10 rounded-full bg-slate-800/80 text-slate-500 flex items-center justify-center mx-auto text-sm">
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                        <p class="text-xs text-slate-400 font-medium">No active directives loaded.</p>
+                        <p class="text-[11px] text-slate-500">Head to the Planner tab to compose an agent instruction.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Control Actions -->
+            <div id="pipeline-controls" class="hidden flex gap-2 pt-2">
+                <button onclick="pauseResumePipeline()" id="pause-btn" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 rounded-xl text-xs font-mono font-medium transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-pause"></i> <span>Pause Execution</span>
+                </button>
+                <button onclick="cancelActivePipeline()" class="flex-1 bg-red-950/40 hover:bg-red-900/40 border border-red-800/40 text-red-300 py-2.5 rounded-xl text-xs font-mono font-medium transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-ban"></i> <span>Abort</span>
+                </button>
+            </div>
+
+        </section>
+
+        <!-- TAB 3: TASKS HUB & SCHEDULED QUEUE -->
+        <section id="tab-tasks" class="space-y-4 tab-content hidden">
+            
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-white tracking-tight">Scheduled Queue & History</h2>
+                    <p class="text-xs text-slate-400">Background tasks persisted on device</p>
+                </div>
+                <button onclick="renderScheduledQueue()" class="text-xs font-mono text-indigo-400 hover:text-indigo-300 p-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+
+            <!-- Queue metrics -->
+            <div class="grid grid-cols-3 gap-2.5">
+                <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-center">
+                    <div class="text-lg font-bold text-white font-mono" id="stat-pending">0</div>
+                    <div class="text-[10px] text-slate-400 font-mono uppercase">Queued</div>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-center">
+                    <div class="text-lg font-bold text-emerald-400 font-mono" id="stat-completed">0</div>
+                    <div class="text-[10px] text-slate-400 font-mono uppercase">Completed</div>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-center">
+                    <div class="text-lg font-bold text-indigo-400 font-mono" id="stat-total">0</div>
+                    <div class="text-[10px] text-slate-400 font-mono uppercase">Total</div>
+                </div>
+            </div>
+
+            <!-- Scheduled Tasks List -->
+            <div class="space-y-2" id="scheduled-tasks-container">
+                <!-- Dynamically populated -->
+            </div>
+
+        </section>
+
+        <!-- TAB 4: SYSTEM LOGS -->
+        <section id="tab-logs" class="space-y-4 tab-content hidden">
+            
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-white tracking-tight">System Audit Logs</h2>
+                    <p class="text-xs text-slate-400">Real-time background agent telemetry</p>
+                </div>
+                <button onclick="clearLogs()" class="text-xs font-mono text-slate-400 hover:text-red-400 bg-slate-800/60 border border-slate-700/60 px-2.5 py-1 rounded-lg">
+                    Clear Logs
+                </button>
+            </div>
+
+            <div class="bg-slate-950/90 border border-slate-800/80 rounded-2xl p-3.5 shadow-inner">
+                <div id="execution-logs" class="space-y-2 max-h-[460px] overflow-y-auto text-xs font-mono text-slate-400">
+                    <div class="text-slate-500 flex items-start gap-2">
+                        <span class="text-indigo-400">[Init]</span> Agency AI system loaded and ready.
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 5: SETTINGS & GEMINI CONFIG -->
+        <section id="tab-settings" class="space-y-4 tab-content hidden">
+            
+            <div>
+                <h2 class="text-base font-bold text-white tracking-tight">Agent Configuration</h2>
+                <p class="text-xs text-slate-400">Configure your Gemini API key & mobile preferences</p>
+            </div>
+
+            <!-- API Key Card -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3.5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-key text-amber-400 text-xs"></i>
+                        <span class="text-xs font-bold font-mono text-white">GOOGLE GEMINI API KEY</span>
+                    </div>
+                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] text-indigo-400 hover:underline flex items-center gap-1 font-mono">
+                        Get free key <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                    </a>
+                </div>
+
+                <div class="space-y-1.5">
+                    <div class="relative">
+                        <input type="password" id="settings-api-key" placeholder="AIzaSy..." 
+                            class="w-full bg-[#050811] border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-600 font-mono focus:outline-none focus:border-indigo-500">
+                        <button type="button" onclick="toggleKeyVisibility()" class="absolute right-3 top-3 text-slate-500 hover:text-slate-300 text-xs">
+                            <i class="fa-regular fa-eye" id="key-visibility-icon"></i>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-slate-500 leading-normal">
+                        Your key stays strictly within your mobile device's secure local storage and communicates directly with Google's API.
+                    </p>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="saveApiKey()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 px-3 rounded-xl text-xs font-mono transition-all active:scale-95">
+                        Save Key
+                    </button>
+                    <button onclick="testGeminiConnection()" id="test-key-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 px-3 rounded-xl text-xs font-mono transition-all active:scale-95 flex items-center gap-1.5">
+                        <i class="fa-solid fa-vial text-xs"></i> Test
+                    </button>
+                </div>
+
+                <div id="key-test-status" class="hidden text-[11px] font-mono p-2.5 rounded-lg border"></div>
+            </div>
+
+            <!-- Model Selection -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3 shadow-sm">
+                <label class="text-xs font-bold font-mono text-white flex items-center gap-2">
+                    <i class="fa-solid fa-brain text-indigo-400 text-xs"></i> GEMINI MODEL
+                </label>
+                <select id="model-select" onchange="saveModelChoice()" class="w-full bg-[#050811] border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-indigo-500">
+                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fastest & Recommended)</option>
+                    <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                    <option value="gemini-1.5-pro">Gemini 1.5 Pro (Deep Reasoning)</option>
+                </select>
+            </div>
+
+            <!-- Mobile & Background Preferences -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3.5 shadow-sm">
+                <span class="text-xs font-bold font-mono text-white flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-screen text-cyan-400 text-xs"></i> MOBILE HARDWARE & SYNC
+                </span>
+
+                <div class="space-y-3 text-xs">
+                    <!-- Notification toggle -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-slate-200 font-medium">Background Push Alerts</div>
+                            <div class="text-[10px] text-slate-400">Trigger notifications when app is minimized</div>
+                        </div>
+                        <button onclick="toggleNotificationPermission()" id="pref-notif-switch" class="w-11 h-6 bg-slate-700 rounded-full transition-colors relative">
+                            <span class="w-4 h-4 bg-white rounded-full absolute top-1 left-1 transition-transform"></span>
+                        </button>
+                    </div>
+
+                    <!-- Voice TTS toggle -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-slate-200 font-medium">Voice Audio Announcements</div>
+                            <div class="text-[10px] text-slate-400">Speak alerts and results aloud via device TTS</div>
+                        </div>
+                        <button onclick="togglePreference('tts')" id="pref-tts-switch" class="w-11 h-6 bg-indigo-600 rounded-full transition-colors relative">
+                            <span class="w-4 h-4 bg-white rounded-full absolute top-1 right-1 transition-transform"></span>
+                        </button>
+                    </div>
+
+                    <!-- Vibration toggle -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-slate-200 font-medium">Haptic Feedback</div>
+                            <div class="text-[10px] text-slate-400">Vibrate on actions and countdown triggers</div>
+                        </div>
+                        <button onclick="togglePreference('haptics')" id="pref-haptics-switch" class="w-11 h-6 bg-indigo-600 rounded-full transition-colors relative">
+                            <span class="w-4 h-4 bg-white rounded-full absolute top-1 right-1 transition-transform"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Worker & Storage Management -->
+            <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 space-y-3">
+                <span class="text-xs font-bold font-mono text-slate-400 flex items-center gap-2">
+                    <i class="fa-solid fa-database text-slate-400 text-xs"></i> DATA MANAGEMENT
+                </span>
+                <div class="flex gap-2">
+                    <button onclick="resetAllData()" class="flex-1 bg-red-950/40 hover:bg-red-900/40 border border-red-800/40 text-red-300 font-semibold py-2.5 px-3 rounded-xl text-xs font-mono transition-all active:scale-95">
+                        Reset Agent Cache
+                    </button>
+                    <button onclick="testSyntheticAudio()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 px-3 rounded-xl text-xs font-mono transition-all active:scale-95">
+                        Test Sound
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ACTION DISPATCH MODAL (for WhatsApp, external URLs requiring browser gesture) -->
+    <div id="action-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4 animate-fade-in">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-5 space-y-4 shadow-2xl text-center">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto text-xl" id="action-modal-icon">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </div>
+            <div class="space-y-1">
+                <div class="text-[10px] font-mono text-indigo-400 uppercase tracking-widest">// Agent Action Ready</div>
+                <h3 id="modal-title" class="font-bold text-base text-white">Action Triggered</h3>
+                <p id="modal-desc" class="text-xs text-slate-400 leading-relaxed">Agent has prepared an action that requires a user gesture.</p>
+            </div>
+            <div class="flex gap-2 pt-1">
+                <button onclick="closeActionModal(false)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-3 rounded-xl text-xs font-mono">
+                    Dismiss
+                </button>
+                <button id="modal-confirm-btn" onclick="closeActionModal(true)" class="flex-1 bg-gradient-to-r from-indigo-600 to-cyan-500 text-white py-3 rounded-xl text-xs font-mono font-bold shadow-md shadow-indigo-600/30">
+                    Proceed
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIRST RUN ONBOARDING MODAL (If no API Key is set) -->
+    <div id="onboarding-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl">
+            <div class="text-center space-y-2">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 via-brand-500 to-cyan-400 p-[2px] mx-auto shadow-lg shadow-indigo-500/30">
+                    <div class="w-full h-full bg-[#090d16] rounded-[14px] flex items-center justify-center">
+                        <i class="fa-solid fa-robot text-cyan-400 text-2xl"></i>
+                    </div>
+                </div>
+                <h2 class="text-lg font-bold text-white tracking-tight">Welcome to Agency AI</h2>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Your autonomous mobile agent for scheduled tasks, URLs, reminders and background dispatches powered by Google Gemini.
+                </p>
+            </div>
+
+            <div class="space-y-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80">
+                <label class="block text-xs font-semibold text-slate-300 font-mono">ENTER YOUR GEMINI API KEY</label>
+                <div class="relative">
+                    <input type="password" id="onboard-api-key" placeholder="AIzaSy..." 
+                        class="w-full bg-[#050811] border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="flex items-center justify-between text-[11px]">
+                    <a href="https://aistudio.google.com/apikey" target="_blank" class="text-indigo-400 hover:underline flex items-center gap-1 font-mono">
+                        Get free Google key <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                    </a>
+                    <button type="button" onclick="continueInDemoMode()" class="text-slate-400 hover:text-white font-mono">
+                        Use Demo Mode &rarr;
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="completeOnboarding()" class="w-full bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold py-3.5 rounded-xl text-xs font-mono uppercase tracking-wider shadow-lg shadow-indigo-600/30 active:scale-95 transition-all">
+                Launch Agency Assistant
+            </button>
+        </div>
+    </div>
+
+    <!-- ANDROID BOTTOM NAVIGATION BAR -->
+    <nav class="fixed bottom-0 left-0 right-0 z-40 glass-nav border-t border-slate-800/80 px-2 py-2 flex items-center justify-around shadow-2xl">
+        <button onclick="switchTab('planner')" class="nav-item active flex-1 py-1.5 flex flex-col items-center gap-1 text-indigo-400 transition-colors" data-tab="planner">
+            <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+            <span class="text-[10px] font-medium tracking-tight">Planner</span>
+        </button>
+
+        <button onclick="switchTab('pipeline')" class="nav-item flex-1 py-1.5 flex flex-col items-center gap-1 text-slate-500 transition-colors" data-tab="pipeline">
+            <div class="relative">
+                <i class="fa-solid fa-timeline text-base"></i>
+                <span id="nav-pipeline-dot" class="hidden absolute -top-1 -right-1 w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+            </div>
+            <span class="text-[10px] font-medium tracking-tight">Pipeline</span>
+        </button>
+
+        <button onclick="switchTab('tasks')" class="nav-item flex-1 py-1.5 flex flex-col items-center gap-1 text-slate-500 transition-colors" data-tab="tasks">
+            <i class="fa-solid fa-calendar-check text-base"></i>
+            <span class="text-[10px] font-medium tracking-tight">Queue</span>
+        </button>
+
+        <button onclick="switchTab('logs')" class="nav-item flex-1 py-1.5 flex flex-col items-center gap-1 text-slate-500 transition-colors" data-tab="logs">
+            <i class="fa-solid fa-terminal text-base"></i>
+            <span class="text-[10px] font-medium tracking-tight">Logs</span>
+        </button>
+
+        <button onclick="switchTab('settings')" class="nav-item flex-1 py-1.5 flex flex-col items-center gap-1 text-slate-500 transition-colors" data-tab="settings">
+            <i class="fa-solid fa-gear text-base"></i>
+            <span class="text-[10px] font-medium tracking-tight">Settings</span>
+        </button>
+    </nav>
+
+    <!-- CORE JAVASCRIPT APP ENGINE -->
+    <script>
+        // Storage Keys
+        const STORAGE_KEY_API = 'agency_gemini_api_key';
+        const STORAGE_KEY_MODEL = 'agency_gemini_model';
+        const STORAGE_KEY_TASKS = 'agency_scheduled_tasks';
+        const STORAGE_KEY_PREFS = 'agency_user_prefs';
+
+        // State
+        let apiKey = localStorage.getItem(STORAGE_KEY_API) || '';
+        let selectedModel = localStorage.getItem(STORAGE_KEY_MODEL) || 'gemini-2.5-flash';
+        let isDemoMode = false;
+        let activePipeline = null;
+        let isPipelinePaused = false;
+        let deferredInstallPrompt = null;
+        let modalActionCallback = null;
+        let speechRecognition = null;
+        let isRecordingVoice = false;
+
+        // User Preferences
+        let preferences = {
+            tts: true,
+            haptics: true,
+            notifications: false
+        };
+
+        try {
+            const savedPrefs = localStorage.getItem(STORAGE_KEY_PREFS);
+            if (savedPrefs) preferences = { ...preferences, ...JSON.parse(savedPrefs) };
+        } catch(e) {}
+
+        // -------------------------------------------------------------
+        // Service Worker & PWA Lifecycle
+        // -------------------------------------------------------------
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => {
+                        logMessage('Service Worker registered successfully.');
+                        
+                        // Register Periodic Background Sync if available on Android
+                        if ('periodicSync' in reg) {
+                            reg.periodicSync.register('agency-agent-check', {
+                                minInterval: 15 * 60 * 1000 // 15 minutes
+                            }).then(() => {
+                                logMessage('Periodic Background Sync registered.');
+                            }).catch(() => {});
+                        }
+                    })
+                    .catch((err) => {
+                        console.error('Service Worker registration failed:', err);
+                    });
+
+                // Listen for messages from Service Worker (e.g. background notification clicked)
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    const data = event.data;
+                    if (data?.type === 'TASK_TRIGGERED_IN_BACKGROUND') {
+                        logMessage(`[Background Wakeup] Task ${data.taskId} triggered in background.`);
+                        handleBackgroundTrigger(data.taskId);
+                    } else if (data?.type === 'NOTIFICATION_CLICKED') {
+                        switchTab('pipeline');
+                    }
+                });
+            });
+        }
+
+        // PWA Install Prompt (Android & Desktop)
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            const installBtn = document.getElementById('pwa-install-btn');
+            const installBanner = document.getElementById('install-banner');
+            if (installBtn) installBtn.classList.remove('hidden');
+            if (installBanner) installBanner.classList.remove('hidden');
+        });
+
+        function installPWA() {
+            if (!deferredInstallPrompt) return;
+            triggerHaptic(20);
+            deferredInstallPrompt.prompt();
+            deferredInstallPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    logMessage('User accepted PWA installation.');
+                }
+                deferredInstallPrompt = null;
+                document.getElementById('pwa-install-btn')?.classList.add('hidden');
+                document.getElementById('install-banner')?.classList.add('hidden');
+            });
+        }
+
+        function dismissInstallBanner() {
+            document.getElementById('install-banner')?.classList.add('hidden');
+        }
+
+        // -------------------------------------------------------------
+        // Initialization & App State
+        // -------------------------------------------------------------
+        window.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            
+            // Handle Hash navigation if opened via shortcut
+            if (window.location.hash === '#new-task') switchTab('planner');
+            if (window.location.hash === '#pipeline') switchTab('pipeline');
+
+            // Periodic heartbeat to verify pending tasks even if minimized
+            setInterval(checkPendingTasks, 1000);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    checkPendingTasks();
+                }
+            });
+        });
+
+        function initApp() {
+            // Check API Key
+            if (!apiKey) {
+                document.getElementById('onboarding-modal').classList.remove('hidden');
+            } else {
+                document.getElementById('settings-api-key').value = apiKey;
+                updateGeminiStatusBadge(true);
+            }
+
+            // Sync Settings UI
+            document.getElementById('model-select').value = selectedModel;
+            document.getElementById('engine-chip').innerText = selectedModel;
+            updatePreferenceUI();
+            checkNotificationStatus();
+            renderScheduledQueue();
+            updateTaskCounters();
+        }
+
+        function updateGeminiStatusBadge(connected) {
+            const tag = document.getElementById('gemini-status-tag');
+            if (isDemoMode) {
+                tag.innerText = "Demo Mode";
+                tag.className = "text-amber-400";
+            } else if (connected) {
+                tag.innerText = "Gemini Connected";
+                tag.className = "text-emerald-400";
+            } else {
+                tag.innerText = "Key Missing";
+                tag.className = "text-red-400";
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Tab Navigation
+        // -------------------------------------------------------------
+        function switchTab(tabId) {
+            triggerHaptic(10);
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const targetSection = document.getElementById(`tab-${tabId}`);
+            if (targetSection) targetSection.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-item').forEach(el => {
+                if (el.dataset.tab === tabId) {
+                    el.classList.add('text-indigo-400', 'active');
+                    el.classList.remove('text-slate-500');
+                } else {
+                    el.classList.remove('text-indigo-400', 'active');
+                    el.classList.add('text-slate-500');
+                }
+            });
+        }
+
+        // -------------------------------------------------------------
+        // Audio & Haptic Feedback
+        // -------------------------------------------------------------
+        function triggerHaptic(duration = 20) {
+            if (preferences.haptics && 'vibrate' in navigator) {
+                try {
+                    navigator.vibrate(duration);
+                } catch(e) {}
+            }
+        }
+
+        function playChime(success = true) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (success) {
+                    // Pleasant two-tone chime (F5 -> A5)
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(698.46, now);
+                    osc.frequency.exponentialRampToValueAtTime(880.00, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                    osc.start(now);
+                    osc.stop(now + 0.45);
+                } else {
+                    // Alert buzz
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch(e) {}
+        }
+
+        function speakText(text) {
+            if (!preferences.tts || !('speechSynthesis' in window)) return;
+            try {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+            } catch(e) {}
+        }
+
+        function testSyntheticAudio() {
+            triggerHaptic([30, 50, 30]);
+            playChime(true);
+            speakText("Agency background audio engine is active.");
+        }
+
+        // -------------------------------------------------------------
+        // Speech-to-Text Voice Dictation (Web Speech API)
+        // -------------------------------------------------------------
+        function toggleVoiceDictation() {
+            triggerHaptic(15);
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) {
+                alertModal("Voice Input", "Speech recognition is not supported on this browser.");
+                return;
+            }
+
+            if (isRecordingVoice && speechRecognition) {
+                speechRecognition.stop();
+                return;
+            }
+
+            try {
+                speechRecognition = new SpeechRec();
+                speechRecognition.continuous = false;
+                speechRecognition.interimResults = false;
+                speechRecognition.lang = 'en-US';
+
+                speechRecognition.onstart = () => {
+                    isRecordingVoice = true;
+                    document.getElementById('mic-icon').className = "fa-solid fa-microphone-lines text-red-400 animate-pulse";
+                    document.getElementById('mic-label').innerText = "Listening...";
+                    triggerHaptic([20, 30, 20]);
+                };
+
+                speechRecognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    const promptEl = document.getElementById('user-prompt');
+                    promptEl.value = promptEl.value ? `${promptEl.value} ${transcript}` : transcript;
+                    logMessage(`Voice input: "${transcript}"`);
+                };
+
+                speechRecognition.onerror = (e) => {
+                    logMessage(`Speech recognition error: ${e.error}`);
+                    resetMicUI();
+                };
+
+                speechRecognition.onend = () => {
+                    resetMicUI();
+                };
+
+                speechRecognition.start();
+            } catch(err) {
+                console.error(err);
+                resetMicUI();
+            }
+        }
+
+        function resetMicUI() {
+            isRecordingVoice = false;
+            document.getElementById('mic-icon').className = "fa-solid fa-microphone";
+            document.getElementById('mic-label').innerText = "Dictate";
+        }
+
+        // -------------------------------------------------------------
+        // Notifications & Background Wakeup
+        // -------------------------------------------------------------
+        function checkNotificationStatus() {
+            const hasSupport = 'Notification' in window;
+            const isGranted = hasSupport && Notification.permission === 'granted';
+            preferences.notifications = isGranted;
+
+            const icon = document.getElementById('header-notif-icon');
+            if (isGranted) {
+                icon.className = "fa-solid fa-bell text-indigo-400";
+            } else {
+                icon.className = "fa-regular fa-bell text-slate-400";
+            }
+            updatePreferenceUI();
+        }
+
+        async function toggleNotificationPermission() {
+            triggerHaptic(15);
+            if (!('Notification' in window)) {
+                alertModal("Alerts", "System Notifications are not supported in this browser.");
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                alertModal("Alerts Active", "System push notifications are already enabled for background alerts.");
+                return;
+            }
+
+            const permission = await Notification.requestPermission();
+            checkNotificationStatus();
+            if (permission === 'granted') {
+                playChime(true);
+                logMessage("Background notification permission granted.");
+                
+                // Show sample test notification
+                if (navigator.serviceWorker?.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'TRIGGER_INSTANT_NOTIFICATION',
+                        title: 'Agency AI Active',
+                        body: 'Background notifications ready for scheduled directives.'
+                    });
+                }
+            } else {
+                logMessage("Notification permission was denied.");
+            }
+        }
+
+        // -------------------------------------------------------------
+        // Preset Loaders
+        // -------------------------------------------------------------
+        function loadPreset(type) {
+            triggerHaptic(15);
+            const promptEl = document.getElementById('user-prompt');
+            switch (type) {
+                case 'break':
+                    promptEl.value = "In 2 minutes, trigger a hydration alert with sound and notify me to stretch.";
+                    break;
+                case 'youtube':
+                    promptEl.value = "In 1 minute, open YouTube lofi chill beats for deep focus.";
+                    break;
+                case 'whatsapp':
+                    promptEl.value = "In 2 minutes, prepare a WhatsApp dispatch to +1234567890 saying 'Hey, quick update: The project is on schedule!'";
+                    break;
+                case 'quote':
+                    promptEl.value = "In 1 minute, autonomously formulate an inspiring tech philosophy quote and speak it aloud.";
+                    break;
+            }
+        }
+
+        let selectedTimingPreset = 'gemini';
+        function setTimingPreset(preset) {
+            triggerHaptic(10);
+            selectedTimingPreset = preset;
+            document.querySelectorAll('.timing-pill').forEach(btn => {
+                if (btn.dataset.preset == preset) {
+                    btn.className = "timing-pill active px-2.5 py-1 rounded-md text-white font-medium bg-indigo-600 transition-all";
+                } else {
+                    btn.className = "timing-pill px-2.5 py-1 rounded-md text-slate-400 hover:text-white transition-all";
+                }
+            });
+        }
+
+        // -------------------------------------------------------------
+        // Gemini API Planning & Decomposition Engine
+        // -------------------------------------------------------------
+        async function planAndExecute() {
+            triggerHaptic(20);
+            const prompt = document.getElementById('user-prompt').value.trim();
+            if (!prompt) {
+                alertModal("Input Required", "Please describe a directive or scheduled task for the agent.");
+                return;
+            }
+
+            if (!apiKey && !isDemoMode) {
+                document.getElementById('onboarding-modal').classList.remove('hidden');
+                return;
+            }
+
+            const btn = document.getElementById('execute-btn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i><span>Decomposing Prompt with Gemini...</span>`;
+
+            logMessage(`Compiling directive: "${prompt}"`);
+
+            let planData = null;
+
+            if (isDemoMode) {
+                // High-fidelity local simulation if user has no API key
+                await new Promise(r => setTimeout(r, 900));
+                planData = generateSimulationPlan(prompt);
+            } else {
+                try {
+                    planData = await callGeminiDecomposition(prompt);
+                } catch(err) {
+                    console.error("Gemini call error:", err);
+                    logMessage(`Gemini planning error: ${err.message}. Falling back to smart decomposition.`);
+                    planData = generateSimulationPlan(prompt);
+                }
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-play text-xs"></i><span>Compile & Schedule Agent</span>`;
+
+            if (!planData || !planData.steps || planData.steps.length === 0) {
+                alertModal("Planning Error", "Could not parse actionable steps from prompt. Please try again.");
+                return;
+            }
+
+            // Adjust delay if custom timing preset was picked
+            if (selectedTimingPreset !== 'gemini' && !isNaN(selectedTimingPreset)) {
+                const totalSeconds = parseInt(selectedTimingPreset) * 60;
+                if (planData.steps[0]) {
+                    planData.steps[0].delaySeconds = totalSeconds;
+                }
+            }
+
+            // Register task in local storage & background queue
+            const taskId = 'task_' + Date.now();
+            const taskEntry = {
+                id: taskId,
+                prompt: prompt,
+                summary: planData.summary || "Scheduled Agent Directive",
+                createdAt: Date.now(),
+                status: 'running',
+                steps: planData.steps.map((s, idx) => ({
+                    ...s,
+                    id: s.id || (idx + 1),
+                    status: 'pending'
+                }))
+            };
+
+            saveTaskToQueue(taskEntry);
+            playChime(true);
+
+            // Switch to pipeline view and begin execution
+            switchTab('pipeline');
+            startPipelineExecution(taskEntry);
+        }
+
+        async function callGeminiDecomposition(prompt) {
+            const systemPrompt = `You are Agency AI, an autonomous mobile task planner.
+Deconstruct the user's natural language request into a sequence of actionable timed steps formatted in valid JSON.
+
+Supported action types:
+1. "wait": delay execution for a specific number of seconds (delaySeconds). Default to user requested time or sensible delay (e.g. 10 to 60s).
+2. "open_url": launch a web link (payload must be a valid URL starting with https://).
+3. "whatsapp": dispatch WhatsApp message (payload should be https://wa.me/PHONE?text=ENCODED_MESSAGE or phone/message).
+4. "notification": trigger a system mobile push alert (payload is notification text).
+5. "system_speak": speak an announcement aloud using device speech synthesis (payload is speech text).
+6. "gemini_query": ask Gemini an autonomous question or generate advice dynamically at trigger time (payload is question).
+7. "log": record a milestone in logs (payload is log text).
+
+Schema:
+{
+  "summary": "Brief 1-sentence summary of directive",
+  "steps": [
+    {
+      "id": 1,
+      "title": "Clear step title",
+      "delaySeconds": 10,
+      "action": "wait" | "open_url" | "whatsapp" | "notification" | "system_speak" | "gemini_query" | "log",
+      "payload": "URL, message text, or speech text"
+    }
+  ]
+}`;
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    temperature: 0.2
+                }
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`API returned HTTP ${response.status}: ${errText}`);
+            }
+
+            const data = await response.json();
+            const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!textContent) throw new Error("Empty response from Gemini.");
+
+            return JSON.parse(textContent);
+        }
+
+        // Smart Local Simulation Plan (if key not entered or offline fallback)
+        function generateSimulationPlan(prompt) {
+            const lower = prompt.toLowerCase();
+            let delaySeconds = 15;
+            
+            // Extract minute mentions
+            const minMatch = lower.match(/(\d+)\s*(?:min|minute)/);
+            if (minMatch) {
+                delaySeconds = parseInt(minMatch[1]) * 60;
+            } else {
+                const secMatch = lower.match(/(\d+)\s*(?:sec|second)/);
+                if (secMatch) delaySeconds = parseInt(secMatch[1]);
+            }
+
+            const steps = [];
+
+            if (lower.includes('youtube') || lower.includes('video') || lower.includes('lofi')) {
+                steps.push({
+                    id: 1,
+                    title: `Countdown delay (${delaySeconds}s)`,
+                    delaySeconds: delaySeconds,
+                    action: "wait",
+                    payload: "Standby timer"
+                });
+                steps.push({
+                    id: 2,
+                    title: "Launch YouTube Media Stream",
+                    delaySeconds: 1,
+                    action: "open_url",
+                    payload: "https://www.youtube.com/watch?v=jfKfPfyJRdk"
+                });
+                steps.push({
+                    id: 3,
+                    title: "Audio TTS Confirmation",
+                    delaySeconds: 1,
+                    action: "system_speak",
+                    payload: "YouTube stream launched as requested."
+                });
+            } else if (lower.includes('whatsapp') || lower.includes('message')) {
+                steps.push({
+                    id: 1,
+                    title: `Dispatch delay (${delaySeconds}s)`,
+                    delaySeconds: delaySeconds,
+                    action: "wait",
+                    payload: "Delay prior to dispatch"
+                });
+                steps.push({
+                    id: 2,
+                    title: "Prepare WhatsApp Message",
+                    delaySeconds: 1,
+                    action: "whatsapp",
+                    payload: "https://wa.me/?text=" + encodeURIComponent("Agency Agent update: Task triggered successfully!")
+                });
+                steps.push({
+                    id: 3,
+                    title: "Dispatch Alert Notification",
+                    delaySeconds: 1,
+                    action: "notification",
+                    payload: "WhatsApp dispatch ready for sending!"
+                });
+            } else {
+                steps.push({
+                    id: 1,
+                    title: `Scheduled Wait (${delaySeconds}s)`,
+                    delaySeconds: delaySeconds,
+                    action: "wait",
+                    payload: "Timer"
+                });
+                steps.push({
+                    id: 2,
+                    title: "System Notification Alert",
+                    delaySeconds: 1,
+                    action: "notification",
+                    payload: `Scheduled reminder: ${prompt}`
+                });
+                steps.push({
+                    id: 3,
+                    title: "Voice Speech Announcement",
+                    delaySeconds: 1,
+                    action: "system_speak",
+                    payload: `Your scheduled task is ready: ${prompt}`
+                });
+            }
+
+            return {
+                summary: `Autonomous plan for: ${prompt.slice(0, 50)}...`,
+                steps
+            };
+        }
+
+        // -------------------------------------------------------------
+        // Pipeline Execution Engine
+        // -------------------------------------------------------------
+        async function startPipelineExecution(task) {
+            activePipeline = task;
+            isPipelinePaused = false;
+
+            document.getElementById('pipeline-status-banner').classList.remove('hidden');
+            document.getElementById('pipeline-controls').classList.remove('hidden');
+            document.getElementById('nav-pipeline-dot').classList.remove('hidden');
+            document.getElementById('pipeline-summary').innerText = task.summary;
+            document.getElementById('pipeline-status').innerText = "EXECUTING DIRECTIVE";
+            document.getElementById('pipeline-status').className = "text-xs font-bold font-mono text-cyan-400";
+            document.getElementById('pipeline-pulse-dot').className = "w-3 h-3 rounded-full bg-cyan-400 animate-pulse";
+
+            renderPipelineSteps(task.steps);
+            logMessage(`Pipeline started: [${task.id}] ${task.summary}`);
+
+            // Inform Service Worker of scheduled tasks for background notification wakeups
+            let cumulativeDelay = 0;
+            task.steps.forEach((step) => {
+                cumulativeDelay += (step.delaySeconds || 0);
+                const triggerTimestamp = Date.now() + (cumulativeDelay * 1000);
+                
+                if (navigator.serviceWorker?.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'SCHEDULE_NOTIFICATION',
+                        taskId: `${task.id}_step_${step.id}`,
+                        title: `Agency: ${step.title}`,
+                        body: step.payload || 'Step reached execution timestamp.',
+                        triggerAt: triggerTimestamp,
+                        actionType: step.action,
+                        actionPayload: step.payload
+                    });
+                }
+            });
+
+            // Execute steps sequentially in UI
+            for (let i = 0; i < task.steps.length; i++) {
+                if (!activePipeline || activePipeline.id !== task.id) break; // aborted
+
+                const step = task.steps[i];
+                step.status = 'running';
+                highlightStepCard(step.id, 'running');
+
+                let secondsLeft = step.delaySeconds || 0;
+                const timerEl = document.getElementById(`step-timer-${step.id}`);
+
+                while (secondsLeft > 0) {
+                    if (!activePipeline || activePipeline.id !== task.id) return;
+                    if (isPipelinePaused) {
+                        await new Promise(r => setTimeout(r, 400));
+                        continue;
+                    }
+
+                    if (timerEl) timerEl.innerText = `${secondsLeft}s`;
+                    document.getElementById('pipeline-countdown-badge').classList.remove('hidden');
+                    document.getElementById('pipeline-countdown-badge').innerText = `${secondsLeft}s remaining`;
+
+                    await new Promise(r => setTimeout(r, 1000));
+                    secondsLeft--;
+                }
+
+                // Execute action
+                step.status = 'completed';
+                highlightStepCard(step.id, 'completed');
+                if (timerEl) timerEl.innerText = "DONE";
+                
+                await executeAction(step);
+                updateQueueStepStatus(task.id, step.id, 'completed');
+            }
+
+            if (activePipeline && activePipeline.id === task.id) {
+                document.getElementById('pipeline-status').innerText = "ALL STEPS COMPLETED";
+                document.getElementById('pipeline-status').className = "text-xs font-bold font-mono text-emerald-400";
+                document.getElementById('pipeline-pulse-dot').className = "w-3 h-3 rounded-full bg-emerald-400";
+                document.getElementById('pipeline-countdown-badge').classList.add('hidden');
+                document.getElementById('nav-pipeline-dot').classList.add('hidden');
+                document.getElementById('pipeline-controls').classList.add('hidden');
+
+                task.status = 'completed';
+                saveTaskToQueue(task);
+                playChime(true);
+                triggerHaptic([50, 100, 50]);
+                logMessage(`Directive [${task.id}] completed successfully.`);
+                updateTaskCounters();
+            }
+        }
+
+        function renderPipelineSteps(steps) {
+            const container = document.getElementById('pipeline-steps');
+            container.innerHTML = '';
+            document.getElementById('steps-count').innerText = steps.length;
+
+            steps.forEach((step, idx) => {
+                const card = document.createElement('div');
+                card.id = `step-card-${step.id}`;
+                card.className = "bg-slate-900/60 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between transition-all";
+
+                const iconMap = {
+                    wait: 'fa-regular fa-clock text-indigo-400',
+                    open_url: 'fa-solid fa-arrow-up-right-from-square text-cyan-400',
+                    whatsapp: 'fa-brands fa-whatsapp text-emerald-400',
+                    notification: 'fa-regular fa-bell text-amber-400',
+                    system_speak: 'fa-solid fa-volume-high text-fuchsia-400',
+                    gemini_query: 'fa-solid fa-brain text-indigo-400',
+                    log: 'fa-solid fa-file-lines text-slate-400'
+                };
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center text-xs">
+                            <i class="${iconMap[step.action] || 'fa-solid fa-bolt text-indigo-400'}"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="mono text-[10px] text-slate-500 font-bold">#0${idx + 1}</span>
+                                <h4 class="text-xs font-semibold text-slate-200">${escapeHtml(step.title)}</h4>
+                            </div>
+                            <div class="text-[10px] mono text-slate-400 mt-0.5 truncate max-w-[200px]">
+                                Action: ${step.action} &bull; ${step.delaySeconds}s delay
+                            </div>
+                        </div>
+                    </div>
+                    <div id="step-timer-${step.id}" class="text-xs font-mono font-bold text-slate-500 px-2.5 py-1 bg-slate-950/60 rounded-lg border border-slate-800">
+                        Queued
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function highlightStepCard(stepId, state) {
+            const card = document.getElementById(`step-card-${stepId}`);
+            const timer = document.getElementById(`step-timer-${stepId}`);
+            if (!card) return;
+
+            if (state === 'running') {
+                card.className = "bg-indigo-950/20 border border-indigo-500/60 rounded-2xl p-3.5 flex items-center justify-between shadow-lg shadow-indigo-500/10 transition-all";
+                if (timer) timer.className = "text-xs font-mono font-bold text-indigo-400 px-2.5 py-1 bg-indigo-950/60 rounded-lg border border-indigo-500/40 animate-pulse";
+            } else if (state === 'completed') {
+                card.className = "bg-emerald-950/15 border border-emerald-500/30 rounded-2xl p-3.5 flex items-center justify-between transition-all";
+                if (timer) timer.className = "text-xs font-mono font-bold text-emerald-400 px-2.5 py-1 bg-emerald-950/40 rounded-lg border border-emerald-500/30";
+            }
+        }
+
+        // Action Handlers
+        async function executeAction(step) {
+            logMessage(`Executing action [${step.action}]: ${step.title}`);
+            triggerHaptic(25);
+
+            // System Notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification("Agency AI Agent", {
+                    body: `${step.title}: ${step.payload || 'Triggered'}`,
+                    icon: './icon-192.png',
+                    badge: './favicon.png'
+                });
+            }
+
+            switch(step.action) {
+                case 'open_url':
+                    promptActionModal("Open Web Link", `Agent is ready to launch: ${step.payload}`, 'fa-arrow-up-right-from-square', () => {
+                        window.open(step.payload, '_blank');
+                    });
+                    break;
+
+                case 'whatsapp':
+                    let waUrl = step.payload;
+                    if (!waUrl.startsWith('http')) {
+                        waUrl = `https://wa.me/?text=${encodeURIComponent(step.payload)}`;
+                    }
+                    promptActionModal("Dispatch WhatsApp", `Agent prepared WhatsApp message: ${step.payload}`, 'fa-brands fa-whatsapp', () => {
+                        window.open(waUrl, '_blank');
+                    });
+                    break;
+
+                case 'notification':
+                    playChime(true);
+                    alertModal(step.title, step.payload);
+                    break;
+
+                case 'system_speak':
+                    speakText(step.payload);
+                    break;
+
+                case 'gemini_query':
+                    if (apiKey && !isDemoMode) {
+                        try {
+                            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ contents: [{ parts: [{ text: step.payload }] }] })
+                            });
+                            const data = await res.json();
+                            const queryResult = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
+                            alertModal("Gemini Autonomous Result", queryResult);
+                            speakText(queryResult);
+                        } catch(e) {
+                            alertModal("Gemini Result", step.payload);
+                        }
+                    } else {
+                        alertModal("Autonomous Insight", step.payload);
+                        speakText(step.payload);
+                    }
+                    break;
+
+                case 'log':
+                case 'wait':
+                default:
+                    playChime(true);
+                    break;
+            }
+        }
+
+        function pauseResumePipeline() {
+            triggerHaptic(15);
+            isPipelinePaused = !isPipelinePaused;
+            const btn = document.getElementById('pause-btn');
+            if (isPipelinePaused) {
+                btn.innerHTML = `<i class="fa-solid fa-play"></i> <span>Resume Execution</span>`;
+                btn.className = "flex-1 bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl text-xs font-mono font-medium transition-all active:scale-95 flex items-center justify-center gap-2";
+                document.getElementById('pipeline-status').innerText = "EXECUTION PAUSED";
+                document.getElementById('pipeline-status').className = "text-xs font-bold font-mono text-amber-400";
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-pause"></i> <span>Pause Execution</span>`;
+                btn.className = "flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2.5 rounded-xl text-xs font-mono font-medium transition-all active:scale-95 flex items-center justify-center gap-2";
+                document.getElementById('pipeline-status').innerText = "EXECUTING DIRECTIVE";
+                document.getElementById('pipeline-status').className = "text-xs font-bold font-mono text-cyan-400";
+            }
+        }
+
+        function cancelActivePipeline() {
+            triggerHaptic(30);
+            if (activePipeline) {
+                logMessage(`Aborted pipeline: ${activePipeline.id}`);
+                // Tell SW to cancel timers
+                if (navigator.serviceWorker?.controller) {
+                    activePipeline.steps.forEach(s => {
+                        navigator.serviceWorker.controller.postMessage({
+                            type: 'CANCEL_TASK',
+                            taskId: `${activePipeline.id}_step_${s.id}`
+                        });
+                    });
+                }
+                activePipeline = null;
+            }
+            document.getElementById('pipeline-status').innerText = "ABORTED BY USER";
+            document.getElementById('pipeline-status').className = "text-xs font-bold font-mono text-red-400";
+            document.getElementById('pipeline-pulse-dot').className = "w-3 h-3 rounded-full bg-red-400";
+            document.getElementById('pipeline-countdown-badge').classList.add('hidden');
+            document.getElementById('pipeline-controls').classList.add('hidden');
+            document.getElementById('nav-pipeline-dot').classList.add('hidden');
+        }
+
+        function clearPipeline() {
+            document.getElementById('pipeline-steps').innerHTML = `
+                <div class="bg-slate-900/30 border border-dashed border-slate-800/80 rounded-2xl p-8 text-center space-y-2">
+                    <div class="w-10 h-10 rounded-full bg-slate-800/80 text-slate-500 flex items-center justify-center mx-auto text-sm">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <p class="text-xs text-slate-400 font-medium">No active directives loaded.</p>
+                </div>
+            `;
+            document.getElementById('pipeline-status').innerText = "IDLE // STANDBY";
+            document.getElementById('pipeline-status').className = "text-xs font-bold font-mono text-slate-400";
+            document.getElementById('pipeline-pulse-dot').className = "w-3 h-3 rounded-full bg-slate-600";
+            document.getElementById('steps-count').innerText = "0";
+            document.getElementById('pipeline-controls').classList.add('hidden');
+        }
+
+        // -------------------------------------------------------------
+        // Task Queue Persistence (Local & Background Sync)
+        // -------------------------------------------------------------
+        function getTaskQueue() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY_TASKS) || '[]');
+            } catch(e) {
+                return [];
+            }
+        }
+
+        function saveTaskToQueue(task) {
+            let queue = getTaskQueue();
+            const existingIndex = queue.findIndex(t => t.id === task.id);
+            if (existingIndex >= 0) {
+                queue[existingIndex] = task;
+            } else {
+                queue.unshift(task);
+            }
+            localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(queue.slice(0, 30)));
+            renderScheduledQueue();
+            updateTaskCounters();
+        }
+
+        function updateQueueStepStatus(taskId, stepId, status) {
+            let queue = getTaskQueue();
+            const task = queue.find(t => t.id === taskId);
+            if (task) {
+                const step = task.steps.find(s => s.id === stepId);
+                if (step) step.status = status;
+                localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(queue));
+            }
+        }
+
+        function renderScheduledQueue() {
+            const queue = getTaskQueue();
+            const container = document.getElementById('scheduled-tasks-container');
+            if (!container) return;
+
+            if (queue.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 text-center text-xs text-slate-400">
+                        No scheduled background tasks in queue.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = queue.map(t => {
+                const dateStr = new Date(t.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const isCompleted = t.status === 'completed';
+                return `
+                    <div class="bg-slate-900/70 border border-slate-800 rounded-2xl p-3.5 space-y-2 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-mono text-slate-500">${dateStr}</span>
+                            <span class="text-[9px] font-mono px-2 py-0.5 rounded-full font-bold ${isCompleted ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'}">
+                                ${isCompleted ? 'COMPLETED' : 'IN PROGRESS'}
+                            </span>
+                        </div>
+                        <h4 class="text-xs font-semibold text-slate-200 line-clamp-1">${escapeHtml(t.summary)}</h4>
+                        <div class="text-[10px] font-mono text-slate-400 flex items-center justify-between pt-1 border-t border-slate-800/60">
+                            <span>${t.steps.length} steps configured</span>
+                            <button onclick="deleteTaskFromQueue('${t.id}')" class="text-slate-500 hover:text-red-400 transition-colors">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteTaskFromQueue(taskId) {
+            triggerHaptic(15);
+            let queue = getTaskQueue().filter(t => t.id !== taskId);
+            localStorage.setItem(STORAGE_KEY_TASKS, JSON.stringify(queue));
+            renderScheduledQueue();
+            updateTaskCounters();
+        }
+
+        function updateTaskCounters() {
+            const queue = getTaskQueue();
+            const completed = queue.filter(t => t.status === 'completed').length;
+            const pending = queue.length - completed;
+
+            document.getElementById('stat-pending').innerText = pending;
+            document.getElementById('stat-completed').innerText = completed;
+            document.getElementById('stat-total').innerText = queue.length;
+            document.getElementById('active-tasks-counter').innerText = `${pending} Active`;
+        }
+
+        function checkPendingTasks() {
+            // Heartbeat check for pending tasks
+            updateTaskCounters();
+        }
+
+        function handleBackgroundTrigger(taskId) {
+            playChime(true);
+            triggerHaptic([40, 60, 40]);
+            renderScheduledQueue();
+        }
+
+        // -------------------------------------------------------------
+        // Settings & API Key Management
+        // -------------------------------------------------------------
+        function saveApiKey() {
+            triggerHaptic(15);
+            const input = document.getElementById('settings-api-key').value.trim();
+            if (!input) {
+                alertModal("API Key Required", "Please input a valid Google Gemini API Key.");
+                return;
+            }
+            apiKey = input;
+            isDemoMode = false;
+            localStorage.setItem(STORAGE_KEY_API, apiKey);
+            updateGeminiStatusBadge(true);
+            logMessage("Gemini API key saved to local storage.");
+            alertModal("Success", "Gemini API key securely saved on this device.");
+        }
+
+        function toggleKeyVisibility() {
+            const input = document.getElementById('settings-api-key');
+            const icon = document.getElementById('key-visibility-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-regular fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-regular fa-eye';
+            }
+        }
+
+        async function testGeminiConnection() {
+            triggerHaptic(20);
+            const input = document.getElementById('settings-api-key').value.trim() || apiKey;
+            const statusEl = document.getElementById('key-test-status');
+            const btn = document.getElementById('test-key-btn');
+
+            if (!input) {
+                alertModal("Notice", "Please enter a key to test.");
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Testing...`;
+            statusEl.classList.remove('hidden');
+            statusEl.className = "text-[11px] font-mono p-2.5 rounded-lg border bg-slate-800 text-slate-300 border-slate-700";
+            statusEl.innerText = "Connecting to Google Generative AI...";
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${input}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: "Respond with the single word: OK" }] }]
+                    })
+                });
+
+                if (!res.ok) {
+                    const errorJson = await res.json().catch(() => ({}));
+                    throw new Error(errorJson.error?.message || `HTTP ${res.status}`);
+                }
+
+                statusEl.className = "text-[11px] font-mono p-2.5 rounded-lg border bg-emerald-950/40 text-emerald-300 border-emerald-500/30";
+                statusEl.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> Success: Connected to ${selectedModel}!`;
+                apiKey = input;
+                localStorage.setItem(STORAGE_KEY_API, apiKey);
+                isDemoMode = false;
+                updateGeminiStatusBadge(true);
+                playChime(true);
+            } catch(err) {
+                statusEl.className = "text-[11px] font-mono p-2.5 rounded-lg border bg-red-950/40 text-red-300 border-red-500/30";
+                statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400"></i> Connection failed: ${escapeHtml(err.message)}`;
+                playChime(false);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-vial text-xs"></i> Test`;
+            }
+        }
+
+        function saveModelChoice() {
+            selectedModel = document.getElementById('model-select').value;
+            localStorage.setItem(STORAGE_KEY_MODEL, selectedModel);
+            document.getElementById('engine-chip').innerText = selectedModel;
+            logMessage(`Active Gemini model switched to: ${selectedModel}`);
+        }
+
+        function togglePreference(pref) {
+            triggerHaptic(15);
+            preferences[pref] = !preferences[pref];
+            localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(preferences));
+            updatePreferenceUI();
+        }
+
+        function updatePreferenceUI() {
+            // TTS
+            const ttsSwitch = document.getElementById('pref-tts-switch');
+            if (ttsSwitch) {
+                ttsSwitch.className = preferences.tts ? "w-11 h-6 bg-indigo-600 rounded-full transition-colors relative" : "w-11 h-6 bg-slate-700 rounded-full transition-colors relative";
+                ttsSwitch.querySelector('span').style.transform = preferences.tts ? "translateX(20px)" : "translateX(0px)";
+            }
+
+            // Haptics
+            const hapticsSwitch = document.getElementById('pref-haptics-switch');
+            if (hapticsSwitch) {
+                hapticsSwitch.className = preferences.haptics ? "w-11 h-6 bg-indigo-600 rounded-full transition-colors relative" : "w-11 h-6 bg-slate-700 rounded-full transition-colors relative";
+                hapticsSwitch.querySelector('span').style.transform = preferences.haptics ? "translateX(20px)" : "translateX(0px)";
+            }
+
+            // Notifs
+            const notifSwitch = document.getElementById('pref-notif-switch');
+            if (notifSwitch) {
+                notifSwitch.className = preferences.notifications ? "w-11 h-6 bg-indigo-600 rounded-full transition-colors relative" : "w-11 h-6 bg-slate-700 rounded-full transition-colors relative";
+                notifSwitch.querySelector('span').style.transform = preferences.notifications ? "translateX(20px)" : "translateX(0px)";
+            }
+        }
+
+        function resetAllData() {
+            triggerHaptic(30);
+            if (confirm("Reset Agency app cache, API key, and queued directives?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // Onboarding flow
+        function completeOnboarding() {
+            triggerHaptic(20);
+            const keyInput = document.getElementById('onboard-api-key').value.trim();
+            if (!keyInput) {
+                alertModal("API Key Needed", "Please enter a valid Gemini API key or tap 'Use Demo Mode'.");
+                return;
+            }
+            apiKey = keyInput;
+            isDemoMode = false;
+            localStorage.setItem(STORAGE_KEY_API, apiKey);
+            document.getElementById('settings-api-key').value = apiKey;
+            document.getElementById('onboarding-modal').classList.add('hidden');
+            updateGeminiStatusBadge(true);
+            playChime(true);
+            logMessage("System initialized with Gemini API key.");
+        }
+
+        function continueInDemoMode() {
+            triggerHaptic(15);
+            isDemoMode = true;
+            document.getElementById('onboarding-modal').classList.add('hidden');
+            updateGeminiStatusBadge(false);
+            logMessage("Operating in Offline / Simulation mode.");
+        }
+
+        // -------------------------------------------------------------
+        // Modals & Action Sheet
+        // -------------------------------------------------------------
+        function promptActionModal(title, desc, iconClass, callback) {
+            triggerHaptic([30, 50, 30]);
+            playChime(true);
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('action-modal-icon').innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+            document.getElementById('modal-confirm-btn').style.display = 'block';
+            document.getElementById('action-modal').classList.remove('hidden');
+            modalActionCallback = callback;
+        }
+
+        function alertModal(title, desc) {
+            triggerHaptic(15);
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('action-modal-icon').innerHTML = `<i class="fa-regular fa-bell text-indigo-400"></i>`;
+            document.getElementById('modal-confirm-btn').style.display = 'none';
+            document.getElementById('action-modal').classList.remove('hidden');
+            modalActionCallback = null;
+        }
+
+        function closeActionModal(proceed) {
+            triggerHaptic(10);
+            document.getElementById('action-modal').classList.add('hidden');
+            if (proceed && modalActionCallback) {
+                modalActionCallback();
+            }
+            modalActionCallback = null;
+        }
+
+        // -------------------------------------------------------------
+        // Logger
+        // -------------------------------------------------------------
+        function logMessage(text) {
+            const logsContainer = document.getElementById('execution-logs');
+            if (!logsContainer) return;
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = "flex items-start gap-2 text-slate-300";
+            div.innerHTML = `<span class="text-slate-500">[${time}]</span> <span>${escapeHtml(text)}</span>`;
+            logsContainer.prepend(div);
+        }
+
+        function clearLogs() {
+            triggerHaptic(15);
+            const logsContainer = document.getElementById('execution-logs');
+            if (logsContainer) {
+                logsContainer.innerHTML = `<div class="text-slate-600">[System] Logs cleared.</div>`;
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
