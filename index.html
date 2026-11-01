@@ -51,6 +51,14 @@
                 </div>
 
                 <div>
+                    <label class="block text-xs font-medium text-zinc-400 mb-1 mono">SYSTEM PERMISSIONS</label>
+                    <button id="perm-btn" onclick="requestAllPermissions()" class="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium py-2 px-4 text-xs mono transition-colors">
+                        <i class="fa-solid fa-shield-halved"></i> Grant Required Permissions (Wake Lock & Notifs)
+                    </button>
+                    <div id="perm-status" class="text-[10px] text-zinc-500 mt-1 mono">Permissions: Pending authorization</div>
+                </div>
+
+                <div>
                     <label class="block text-xs font-medium text-zinc-400 mb-1 mono">GEMINI API KEY</label>
                     <input type="password" id="api-key-input" placeholder="AIzaSy..." class="w-full bg-zinc-950 border border-zinc-800 p-2.5 text-sm text-zinc-100 focus:outline-none focus:border-zinc-500 mono">
                     <p class="text-[10px] text-zinc-500 mt-1">Your key is stored locally in session memory.</p>
@@ -153,6 +161,8 @@
         let userEmail = "";
         let activeTasks = [];
         let modalCallback = null;
+        let wakeLock = null;
+        let permissionsGranted = false;
 
         function playBeep() {
             try {
@@ -168,6 +178,52 @@
                 osc.start();
                 osc.stop(ctx.currentTime + 0.3);
             } catch(e) {}
+        }
+
+        async function requestAllPermissions() {
+            let statusText = [];
+            
+            // 1. Notifications Permission
+            if ("Notification" in window) {
+                const perm = await Notification.requestPermission();
+                if (perm === "granted") {
+                    statusText.push("Notifications: Granted");
+                } else {
+                    statusText.push("Notifications: Denied");
+                }
+            } else {
+                statusText.push("Notifications: Not Supported");
+            }
+
+            // 2. Screen Wake Lock API (keeps background timers running reliably)
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    statusText.push("WakeLock: Active");
+                    wakeLock.addEventListener('release', () => {
+                        logMessage("System Wake Lock released.");
+                    });
+                } catch (err) {
+                    statusText.push("WakeLock: Failed");
+                }
+            } else {
+                statusText.push("WakeLock: Not Supported");
+            }
+
+            // 3. Audio Context warm-up
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                await ctx.resume();
+                statusText.push("Audio: Ready");
+            } catch(e) {
+                statusText.push("Audio: Restricted");
+            }
+
+            permissionsGranted = true;
+            document.getElementById('perm-status').innerText = statusText.join(" | ");
+            document.getElementById('perm-btn').classList.remove('bg-zinc-800', 'hover:bg-zinc-700');
+            document.getElementById('perm-btn').classList.add('bg-emerald-950', 'text-emerald-300', 'border', 'border-emerald-800');
+            logMessage("All required agent permissions requested and initialized.");
         }
 
         function handleGoogleLogin() {
@@ -188,9 +244,13 @@
                 alertCustom("Please sign in with your Google account first.");
                 return;
             }
+            if (!permissionsGranted) {
+                alertCustom("Please grant required system permissions first for autonomous execution.");
+                return;
+            }
             apiKey = keyInput;
             document.getElementById('setup-modal').classList.add('hidden');
-            logMessage("System initialized with Gemini API key.");
+            logMessage("System initialized with Gemini API key and active permissions.");
         }
 
         function resetSystem() {
